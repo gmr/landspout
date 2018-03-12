@@ -31,5 +31,5 @@ Usage
 .. |Version| image:: https://img.shields.io/pypi/v/landspout.svg?
    :target: https://pypi.org/project/landspout
 
-.. |License| image:: https://img.shields.io/pypi/l/rejected.svg?
+.. |License| image:: https://img.shields.io/pypi/l/landspout.svg?
    :target: https://pypi.org/project/landspout
