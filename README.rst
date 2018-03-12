@@ -1,7 +1,7 @@
 Landspout
 =========
 Landspout is a static website generation tool, using
-[Tornado Template](http://www.tornadoweb.org/en/stable/template.html). Create
+`Tornado Template <http://www.tornadoweb.org/en/stable/template.html>`_. Create
 your template structure, and your content, and point landspout at it.
 
 |Version| |License|
