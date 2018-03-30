@@ -6,11 +6,21 @@ your template structure, and your content, and point landspout at it.
 
 |Version| |License|
 
+Landspout has three operational modes:
+
+- Single run build of the site
+- Watch for changes in the source or template directory, rendering on change
+- Run a HTTP server while watching for changes and rendering them
+
 Usage
 -----
+
 .. code::
 
    usage: Static website generation tool
+
+   positional arguments:
+     {build,watch,serve}   The command to run (default: build)
 
    optional arguments:
      -h, --help            show this help message and exit
@@ -24,6 +34,10 @@ Usage
      -b BASE_URI_PATH, --base-uri-path BASE_URI_PATH
      --whitespace {all,single,oneline}
                            Compress whitespace (default: all)
+     -i INTERVAL, --interval INTERVAL
+                           Interval in milliseconds between file checks when
+                           watching (default: 5000)
+     --port PORT           The port to listen on when serving (default: 8080)
      --debug               Extra verbose debug logging (default: False)
      -v, --version         output version information, then exit
 
