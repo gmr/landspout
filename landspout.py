@@ -107,8 +107,8 @@ class Landspout:
         signatures = self.get_signatures(self._source)
         for fp, signature in signatures.items():
             if fp not in self._signatures['source'] or \
-                    signature['stat'].st_mtime_ns != \
-                    self._signatures['source'][fp]['stat'].st_mtime_ns:
+                    signature['stat'].st_mtime != \
+                    self._signatures['source'][fp]['stat'].st_mtime:
                 LOGGER.info('%s added or changed',
                             path.join(signature['base_path'],
                                       signature['filename']))
@@ -122,11 +122,11 @@ class Landspout:
 
         """
         render = False
-        signatures = self.get_signatures(self._source)
+        signatures = self.get_signatures(self._templates)
         for fp, signature in signatures.items():
             if fp not in self._signatures['templates'] or \
-                    signature['stat'].st_mtime_ns != \
-                    self._signatures['templates'][fp]['stat'].st_mtime_ns:
+                    signature['stat'].st_mtime != \
+                    self._signatures['templates'][fp]['stat'].st_mtime:
                 render = True
                 break
         if render:
