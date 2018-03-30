@@ -12,7 +12,7 @@ import sys
 
 from tornado import ioloop, template, web
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 LOGGER = logging.getLogger(__name__)
 LOGGING_FORMAT = '[%(asctime)-15s] %(levelname)-8s %(name)-15s: %(message)s'
