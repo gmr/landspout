@@ -5,6 +5,7 @@ Landspout is a static site generation tool.
 """
 import argparse
 import datetime
+import json
 import logging
 import os
 from os import path
@@ -12,7 +13,7 @@ import sys
 
 from tornado import ioloop, template, web
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 
 LOGGER = logging.getLogger(__name__)
 LOGGING_FORMAT = '[%(asctime)-15s] %(levelname)-8s %(name)-15s: %(message)s'
@@ -31,7 +32,10 @@ class Landspout:
             'templates': self.get_signatures(self._templates)
         }
         self._ioloop = ioloop.IOLoop.current()
-        self._loader = template.Loader(self._templates)
+        self._interval = args.interval
+        self._namespace = self.load_namespace(args.namespace)
+        self._loader = template.Loader(
+            self._templates, namespace=self._namespace)
         self._port = args.port
         self._whitespace = args.whitespace
 
@@ -55,6 +59,7 @@ class Landspout:
         settings = {
             'autoreload': True,
             'static_path': self._dest,
+            'static_hash_cache': False,
             'static_handler_args': {
                 'default_filename': 'index.html'
             },
@@ -62,7 +67,7 @@ class Landspout:
         }
         app = web.Application([(r'/(.*)', web.StaticFileHandler)], **settings)
         app.listen(self._port)
-        self._ioloop.add_timeout(1000, self.check_files)
+        self._ioloop.call_later(self._interval, self.check_files)
         try:
             self._ioloop.start()
         except KeyboardInterrupt:
@@ -74,7 +79,7 @@ class Landspout:
 
         """
         LOGGER.info('Watching template and source directory for changes')
-        self._ioloop.add_timeout(1000, self.check_files)
+        self._ioloop.call_later(self._interval, self.check_files)
         try:
             self._ioloop.start()
         except KeyboardInterrupt:
@@ -97,7 +102,7 @@ class Landspout:
         """
         self.check_source()
         self.check_templates()
-        self._ioloop.add_timeout(5000, self.check_files)
+        self._ioloop.call_later(self._interval, self.check_files)
 
     def check_source(self):
         """Check the source directory looking for files to (re-)render,
@@ -131,6 +136,7 @@ class Landspout:
                 break
         if render:
             LOGGER.info('Template change detected, running full build')
+            self._loader.reset()
             self.build()
             self._signatures['templates'] = signatures
 
@@ -153,6 +159,15 @@ class Landspout:
                     'base_path': path.relpath(root, dir_path)}
         return signatures
 
+    @staticmethod
+    def load_namespace(namespace):
+        """Load the namespace data in as JSON, returning the value as a dict.
+
+        :rtype: dict
+
+        """
+        return json.load(namespace) if namespace else {}
+
     def render(self, base_path, filename):
         """Return the specified file.
 
@@ -174,14 +189,20 @@ class Landspout:
         with open(source, 'r') as handle:
             content = handle.read()
 
-        renderer = template.Template(content, source, self._loader)
+        try:
+            renderer = template.Template(content, source, self._loader)
+        except (SyntaxError, template.ParseError) as err:
+            LOGGER.error('Error rendering %s: %r', dest, err)
+            return False
+
+        render_filename = filename if base_path == '.' \
+            else '{}/{}'.format(base_path, filename)
         with open(dest, 'wb') as handle:
             try:
                 handle.write(
                     renderer.generate(
                         base_path=self.base_path,
-                        filename=filename if base_path == '.'
-                            else '{}/{}'.format(base_path, filename),
+                        filename=render_filename,
                         file_mtime=file_mtime,
                         static_url=self.static_url))
             except Exception as err:
@@ -238,9 +259,12 @@ def parse_cli_arguments():
                         choices=['all', 'single', 'oneline'],
                         default='all',
                         help='Compress whitespace')
-    parser.add_argument('-i', '--interval', type=int, default=5000,
-                        help='Interval in milliseconds between file '
-                             'checks when watching')
+    parser.add_argument('-n', '--namespace', type=argparse.FileType('r'),
+                        help='Load a JSON file of values to inject into the '
+                             'default rendering namespace.')
+    parser.add_argument('-i', '--interval', type=int, default=3,
+                        help='Interval in seconds between file '
+                             'checks while watching or serving')
     parser.add_argument('--port', type=int, default=8080,
                         help='The port to listen on when serving')
     parser.add_argument('--debug', action='store_true',
