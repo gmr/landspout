@@ -1,26 +1,26 @@
 # coding=utf-8
 """
-Landspout is a static site generation tool.
+Core Application
+================
 
 """
-import argparse
 import datetime
 import json
 import logging
 import os
 from os import path
-import sys
 
 from tornado import ioloop, template, web
+import yaml
 
-__version__ = '0.3.0'
+from landspout import modules
 
-LOGGER = logging.getLogger(__name__)
-LOGGING_FORMAT = '[%(asctime)-15s] %(levelname)-8s %(name)-15s: %(message)s'
+LOGGER = logging.getLogger('landspout')
 
 
 class Landspout:
     """Static website build tool"""
+
     def __init__(self, args):
         self._args = args
         self._base_path = args.base_uri_path
@@ -182,15 +182,32 @@ class Landspout:
             LOGGER.debug('Creating %s', dest_path)
             os.mkdir(dest_path)
 
-        LOGGER.debug('Writing to %s', dest)
         info = os.stat(source)
         file_mtime = datetime.datetime.fromtimestamp(info.st_mtime)
 
         with open(source, 'r') as handle:
-            content = handle.read()
+            template_str = handle.read()
 
+        content, data = None, None
+        if source.endswith('.json'):
+            content = json.loads(template_str)
+        elif source.endswith('.yml') or source.endswith('.yaml'):
+            content = yaml.load(template_str)
+
+        if content:
+            for var in ['template', 'data']:
+                if var not in content:
+                    LOGGER.error('%r not found in %s, skipping', var, source)
+                    return
+            template_str = content['template']
+            data = content['data']
+            extension = '.{}'.format(source.split('.')[:-1])
+            dest = '{}.{}'.format(dest[:len(dest) - len(extension)],
+                                  content.get('extension', 'html'))
+
+        LOGGER.debug('Writing to %s', dest)
         try:
-            renderer = template.Template(content, source, self._loader)
+            renderer = template.Template(template_str, source, self._loader)
         except (SyntaxError, template.ParseError) as err:
             LOGGER.error('Error rendering %s: %r', dest, err)
             return False
@@ -204,7 +221,9 @@ class Landspout:
                         base_path=self.base_path,
                         filename=render_filename,
                         file_mtime=file_mtime,
-                        static_url=self.static_url))
+                        static_url=self.static_url,
+                        data=data,
+                        nested_data=modules.NestedData.render))
             except Exception as err:
                 LOGGER.error('Error rendering %s: %r', dest, err)
                 return False
@@ -218,84 +237,3 @@ class Landspout:
 
         """
         return self.base_path(filename)
-
-
-def exit_application(message=None, code=0):
-    """Exit the application displaying the message to info or error based upon
-    the exit code
-
-    :param str message: The exit message
-    :param int code: The exit code (default: 0)
-
-    """
-    log_method = LOGGER.error if code else LOGGER.info
-    log_method(message.strip())
-    sys.exit(code)
-
-
-def parse_cli_arguments():
-    """Return the base argument parser for CLI applications.
-
-
-    :return: :class:`~argparse.ArgumentParser`
-
-    """
-    parser = argparse.ArgumentParser(
-        'landspout', 'Static website generation tool',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        conflict_handler='resolve')
-
-    parser.add_argument('-s', '--source', metavar='SOURCE',
-                        help='Source content directory',
-                        default='content')
-    parser.add_argument('-d', '--destination', metavar='DEST',
-                        help='Destination directory for built content',
-                        default='build')
-    parser.add_argument('-t', '--templates', metavar='TEMPLATE DIR',
-                        help='Template directory',
-                        default='templates')
-    parser.add_argument('-b', '--base-uri-path', action='store', default='/')
-    parser.add_argument('--whitespace', action='store',
-                        choices=['all', 'single', 'oneline'],
-                        default='all',
-                        help='Compress whitespace')
-    parser.add_argument('-n', '--namespace', type=argparse.FileType('r'),
-                        help='Load a JSON file of values to inject into the '
-                             'default rendering namespace.')
-    parser.add_argument('-i', '--interval', type=int, default=3,
-                        help='Interval in seconds between file '
-                             'checks while watching or serving')
-    parser.add_argument('--port', type=int, default=8080,
-                        help='The port to listen on when serving')
-    parser.add_argument('--debug', action='store_true',
-                        help='Extra verbose debug logging')
-    parser.add_argument('-v', '--version', action='version',
-                        version='%(prog)s {}'.format(__version__),
-                        help='output version information, then exit')
-    parser.add_argument('command', nargs='?',
-                        choices=['build', 'watch', 'serve'],
-                        help='The command to run', default='build')
-    return parser.parse_args()
-
-
-def validate_paths(args):
-    """Ensure all of the configured paths actually exist."""
-    for file_path in [args.source, args.destination, args.templates]:
-        if not path.exists(file_path):
-            exit_application('Path {} does not exist'.format(file_path), 1)
-
-
-def main():
-    """Application entry point"""
-    args = parse_cli_arguments()
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(level=log_level, format=LOGGING_FORMAT)
-    validate_paths(args)
-    LOGGER.info('Landspout v%s [%s]', __version__, args.command)
-    landspout = Landspout(args)
-    if args.command == 'build':
-        landspout.build()
-    elif args.command == 'watch':
-        landspout.watch()
-    elif args.command == 'serve':
-        landspout.serve()
