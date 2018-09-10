@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<p>
+    This is a simple example of using Landspout. It is a very flexible static
+    content generator that uses <a href="http://www.tornadoweb.org/en/stable/template.html">Tornado's</a>
+    template engine.
+</p>
+<p>
+    Last Updated: {{ file_mtime.strftime('%d %B %Y') }}
+</p>
+{% end %}
