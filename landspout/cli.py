@@ -6,6 +6,7 @@ Command Line Interface
 """
 import argparse
 import logging
+import os
 from os import path
 import sys
 
@@ -75,7 +76,12 @@ def parse_cli_arguments():
 
 def validate_paths(args):
     """Ensure all of the configured paths actually exist."""
-    for file_path in [args.source, args.destination, args.templates]:
+    if not path.exists(args.destination):
+        LOGGER.warning('Destination path "%s" does not exist, creating',
+                       args.destination)
+        os.makedirs(path.normpath(args.destination))
+
+    for file_path in [args.source, args.templates]:
         if not path.exists(file_path):
             exit_application('Path {} does not exist'.format(file_path), 1)
 
@@ -85,8 +91,8 @@ def main():
     args = parse_cli_arguments()
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(level=log_level, format=LOGGING_FORMAT)
-    validate_paths(args)
     LOGGER.info('Landspout v%s [%s]', __version__, args.command)
+    validate_paths(args)
     landspout = core.Landspout(args)
     if args.command == 'build':
         landspout.build()

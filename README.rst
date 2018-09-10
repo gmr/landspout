@@ -15,6 +15,8 @@ Landspout has three operational modes:
 Usage
 -----
 
+See the `example <example/>`_ directory for template and content usage examples.
+
 .. code::
 
    usage: Static website generation tool
