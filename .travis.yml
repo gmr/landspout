@@ -1,0 +1,14 @@
+sudo: false
+language: python
+python:
+ - 3.7
+deploy:
+  distributions: sdist bdist_wheel
+  provider: pypi
+  user: crad
+  on:
+    python: 3.7
+    tags: true
+    all_branches: true
+  password:
+    secure: "n/UTAczrX4W6f5kfw/7FGC7xPfPet9zDhiFeosovr5aMf3fXbSMIvxEnueZR0gfyrSM+2BO5v2cZNn0n9qj1TGxdnggSvbNa815gHJPv4SH5ITxMRW3e9jd4nKGw2vIgOW18e1hrq67/mfpE/MXcVuaxQykAxC813iDgaud72qyGNx7uTLfSDWY4Da/+ZOFdn/POFFHcqogXSMfONV2faZktFdJrwqcYmz4l9EfdRkUvblPxLcAuTKQIgZmNhCQUJ0ltjH5DR24fT5exC2ldVXUfT/JS2Ggm/9eSmTo2SyLt4wH6/0WMUucbCk2yE8Hlu4PWqOBdDwmxmoVG/qe1pCywQOCLzgyC+tIcAy/BvEestrGGgs9qA5F5GU3MBOK9NhwbheWtW2xlM/5IksV7N6YCnlmZbaQcxVakqBjGSls9LjHajazNzA5Sr8HwW0OB/H4LcjG/EiDaXSBYSi84Cq5p70ZM0rmOehRdQcjmVlLz5ZdYP8zVWkwa/wdStNKj6fRoRrFung3aPTfxhfrRjjIpLNfLKNw+emASylzHTMMEP/rnCPBvy1CnlDUQSQ+YgDCDL5zmtAboWVYxfu1K8E8P+ypknD635RY7+DxlreBu8VOAIXzqKr+Y9AExJEI2g8a9CKfoR00cgKf8psZaN1XtMvbHt9gu1tUNK0xKQUI="
