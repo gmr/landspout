@@ -9,7 +9,7 @@ deploy:
   provider: pypi
   user: crad
   on:
-    python: 3.7
+    python: 3.6
     tags: true
     all_branches: true
   password:
